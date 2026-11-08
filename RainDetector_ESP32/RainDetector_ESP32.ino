@@ -13,8 +13,8 @@ const char* WIFI_PASS     = "jhon12345";
 // --- Switch between local (http) and cloud (https) ---
 // For LOCAL testing:   use http://192.168.0.101:8000/api/rain
 // For CLOUD (Railway/Render): use https://your-app.up.railway.app/api/rain
-const char* SERVER_URL    = "http://192.168.0.101:8000/api/rain";   // <-- change this to cloud URL when deployed
-const bool  USE_HTTPS     = false;   // set true when using https:// cloud URL
+const char* SERVER_URL = "https://rain-detector-production.up.railway.app/api/rain";
+const bool  USE_HTTPS  = true;
 
 const char* API_KEY       = "ce615aac2e6ea1876efa0c544cb5ed73";     // same as RAIN_API_KEY in .env
 

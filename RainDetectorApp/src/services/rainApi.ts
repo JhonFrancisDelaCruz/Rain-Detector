@@ -26,31 +26,8 @@ export interface RainApiResponse {
  * Determine default backend API URL based on platform and Expo network host.
  */
 export function getDefaultApiUrl(): string {
-  if (process.env.EXPO_PUBLIC_API_URL) {
-    return process.env.EXPO_PUBLIC_API_URL;
-  }
-
-  // If running via Expo Go / development build on a physical phone or simulator:
-  const hostUri = Constants.expoConfig?.hostUri;
-  if (hostUri) {
-    const host = hostUri.split(':')[0];
-    if (host && host !== 'localhost' && host !== '127.0.0.1') {
-      return `http://${host}:8000`;
-    }
-  }
-
-  // Android emulator host loopback
-  if (Platform.OS === 'android') {
-    return 'http://192.168.0.101:8000';
-  }
-
-  // iOS simulator or Web
-  if (Platform.OS === 'web') {
-    return 'http://localhost:8000';
-  }
-
-  // Default fallback to machine local LAN IP
-  return 'http://192.168.0.101:8000';
+  // ✅ Cloud deployment — always use Railway URL
+  return 'https://rain-detector-production.up.railway.app';
 }
 
 /**

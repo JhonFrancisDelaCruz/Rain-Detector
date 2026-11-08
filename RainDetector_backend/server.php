@@ -325,16 +325,7 @@ if ($uri === '/' || $uri === '/index.html' || $uri === '/dashboard') {
                 <h1 class="header-title">Rain Detector</h1>
                 <p class="header-subtitle">Live IoT Web Dashboard</p>
             </div>
-            <button class="test-btn" onclick="triggerTest()">⚡ Simulate Test</button>
-        </div>
 
-        <!-- Connection Banner -->
-        <div class="banner online" id="serverBanner">
-            <div class="banner-left">
-                <div class="dot online" id="serverDot"></div>
-                <span id="bannerStatusText">Backend API: Connected</span>
-            </div>
-            <span class="banner-host" id="bannerHost">http://localhost:8000</span>
         </div>
 
         <!-- LIGHT RAIN WARNING BANNER -->
@@ -434,24 +425,7 @@ if ($uri === '/' || $uri === '/index.html' || $uri === '/dashboard') {
             </p>
         </div>
 
-        <!-- Recent Events History -->
-        <div class="history-card">
-            <div class="history-title">Recent Sensor Readings Log</div>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Time</th>
-                        <th>Level</th>
-                        <th>ADC</th>
-                        <th>Delta</th>
-                        <th>Intensity</th>
-                    </tr>
-                </thead>
-                <tbody id="historyBody">
-                    <tr><td colspan="5" style="text-align:center; color:#6B7280; padding:12px;">Loading readings...</td></tr>
-                </tbody>
-            </table>
-        </div>
+
     </div>
 
     <!-- Pinned Footer -->
@@ -470,41 +444,12 @@ if ($uri === '/' || $uri === '/index.html' || $uri === '/dashboard') {
                 if (!res.ok) throw new Error('HTTP ' + res.status);
                 const data = await res.json();
                 updateUI(data);
-                document.getElementById('serverBanner').className = 'banner online';
-                document.getElementById('serverDot').className = 'dot online';
-                document.getElementById('bannerStatusText').innerText = 'Backend API: Connected';
                 document.getElementById('connText').innerText = 'Connected';
                 document.getElementById('connText').style.color = '#00E676';
             } catch (err) {
-                document.getElementById('serverBanner').className = 'banner offline';
-                document.getElementById('serverDot').className = 'dot offline';
-                document.getElementById('bannerStatusText').innerText = 'Backend API: Disconnected';
                 document.getElementById('connText').innerText = 'Offline';
                 document.getElementById('connText').style.color = '#EF4444';
             }
-        }
-
-        async function fetchHistory() {
-            try {
-                const res = await fetch('/api/rain/history');
-                if (!res.ok) return;
-                const rows = await res.json();
-                const tbody = document.getElementById('historyBody');
-                if (!rows || rows.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#6B7280; padding:12px;">No sensor readings recorded yet.</td></tr>';
-                    return;
-                }
-                tbody.innerHTML = rows.map(r => {
-                    const timeStr = new Date(r.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                    return `<tr>
-                        <td>${timeStr}</td>
-                        <td><span class="badge badge-${r.level}">${r.level}</span></td>
-                        <td>${r.value}</td>
-                        <td>${r.delta}</td>
-                        <td>${r.intensity}%</td>
-                    </tr>`;
-                }).join('');
-            } catch(e) {}
         }
 
         function updateUI(data) {
@@ -662,19 +607,9 @@ if ($uri === '/' || $uri === '/index.html' || $uri === '/dashboard') {
             if (btn) btn.innerText = '✓ Silenced';
         }
 
-        async function triggerTest() {
-            try {
-                await fetch('/api/rain/simulate', { method: 'POST' });
-                await fetchLatest();
-                await fetchHistory();
-            } catch(e) {}
-        }
-
         // Auto poll every 1.5 seconds
         fetchLatest();
-        fetchHistory();
         setInterval(fetchLatest, 1500);
-        setInterval(fetchHistory, 3000);
     </script>
 </body>
 </html>

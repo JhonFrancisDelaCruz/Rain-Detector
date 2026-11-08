@@ -1,1 +1,7 @@
+<<<<<<< HEAD
 start_server.bat
+=======
+database/database.sqlite
+*.bat
+.env
+>>>>>>> 9332f7e (Remove history table, simulate button, and backend banner)

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   StyleSheet,
@@ -8,14 +9,12 @@ import {
   TouchableOpacity,
   Modal,
   TextInput,
-  ActivityIndicator,
   Animated,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import {
   fetchLatestRain,
-  simulateRainReading,
   getDefaultApiUrl,
   RainApiResponse,
 } from '../services/rainApi';
@@ -28,7 +27,6 @@ export default function RainDetectorScreen() {
   const [reading, setReading] = useState<RainApiResponse | null>(null);
   const [isConnected, setIsConnected] = useState<boolean | null>(null);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
-  const [isSimulating, setIsSimulating] = useState<boolean>(false);
   const [showSettings, setShowSettings] = useState<boolean>(false);
   const [inputUrl, setInputUrl] = useState<string>(apiUrl);
   const [lastCheckTime, setLastCheckTime] = useState<string>('Never');
@@ -83,7 +81,11 @@ export default function RainDetectorScreen() {
     try {
       const date = new Date(isoString);
       if (isNaN(date.getTime())) return '--:--';
-      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      return date.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+      });
     } catch {
       return '--:--';
     }
@@ -99,7 +101,12 @@ export default function RainDetectorScreen() {
         if (isMounted) {
           setReading(data);
           setIsConnected(true);
-          setLastCheckTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+          setLastCheckTime(
+            new Date().toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit',
+            })
+          );
           if (data.level !== 'HEAVY') {
             setIsMutedByUser(false);
           }
@@ -140,28 +147,18 @@ export default function RainDetectorScreen() {
       const data = await fetchLatestRain(apiUrl);
       setReading(data);
       setIsConnected(true);
-      setLastCheckTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+      setLastCheckTime(
+        new Date().toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+        })
+      );
     } catch {
       setIsConnected(false);
     } finally {
       setIsRefreshing(false);
     }
   }, [apiUrl]);
-
-  // Trigger test simulated reading
-  const handleSimulate = async () => {
-    setIsSimulating(true);
-    try {
-      await simulateRainReading(apiUrl);
-      const data = await fetchLatestRain(apiUrl);
-      setReading(data);
-      setIsConnected(true);
-    } catch {
-      // simulation failed or server down
-    } finally {
-      setIsSimulating(false);
-    }
-  };
 
   // Save new URL from settings modal
   const handleSaveUrl = () => {
@@ -232,7 +229,9 @@ export default function RainDetectorScreen() {
   const progressPercent = Math.min(100, Math.max(0, intensityValue));
 
   const isSensorOnline = Boolean(reading?.online);
-  const updatedDisplay = reading?.updated ? formatTime(reading.updated) : lastCheckTime;
+  const updatedDisplay = reading?.updated
+    ? formatTime(reading.updated)
+    : lastCheckTime;
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -252,26 +251,9 @@ export default function RainDetectorScreen() {
         <View style={styles.topHeader}>
           <View>
             <Text style={styles.headerTitle}>Rain Detector</Text>
-            <Text style={styles.headerSubtitle}>Live IoT Monitor</Text>
           </View>
 
           <View style={styles.headerActions}>
-            <TouchableOpacity
-              style={styles.simulateButton}
-              onPress={handleSimulate}
-              disabled={isSimulating}
-              activeOpacity={0.7}
-            >
-              {isSimulating ? (
-                <ActivityIndicator size="small" color="#00A3FF" />
-              ) : (
-                <>
-                  <Feather name="play" size={14} color="#00A3FF" style={{ marginRight: 4 }} />
-                  <Text style={styles.simulateText}>Test</Text>
-                </>
-              )}
-            </TouchableOpacity>
-
             <TouchableOpacity
               style={styles.iconButton}
               onPress={() => {
@@ -285,48 +267,14 @@ export default function RainDetectorScreen() {
           </View>
         </View>
 
-        {/* Server Connection Banner */}
-        <TouchableOpacity
-          style={[
-            styles.connectionBanner,
-            isConnected === true
-              ? styles.bannerOnline
-              : isConnected === false
-              ? styles.bannerError
-              : styles.bannerConnecting,
-          ]}
-          onPress={() => setShowSettings(true)}
-          activeOpacity={0.8}
-        >
-          <View style={styles.bannerRow}>
-            <View
-              style={[
-                styles.statusDot,
-                {
-                  backgroundColor:
-                    isConnected === true
-                      ? '#00E676'
-                      : isConnected === false
-                      ? '#EF4444'
-                      : '#FBBF24',
-                },
-              ]}
-            />
-            <Text style={styles.bannerText}>
-              Backend: {isConnected === true ? 'Connected' : isConnected === false ? 'Disconnected (Tap to change)' : 'Connecting...'}
-            </Text>
-          </View>
-          <Text style={styles.bannerHost} numberOfLines={1}>
-            {apiUrl.replace('http://', '')}
-          </Text>
-        </TouchableOpacity>
-
         {/* ================= LIGHT RAIN WARNING BANNER ================= */}
         {reading?.level === 'LIGHT' && (
           <View style={styles.lightWarningBanner}>
             <Feather name="alert-triangle" size={24} color="#FBBF24" />
             <View style={styles.alertContent}>
-              <Text style={styles.lightWarningTitle}>⚠️ WARNING: LIGHT RAIN DETECTED!</Text>
+              <Text style={styles.lightWarningTitle}>
+                ⚠️ WARNING: LIGHT RAIN DETECTED!
+              </Text>
               <Text style={styles.lightWarningSub}>
                 Precipitation has begun. Check windows and bring in hanging clothes.
               </Text>
@@ -336,15 +284,21 @@ export default function RainDetectorScreen() {
 
         {/* ================= HEAVY RAIN PHONE RINGING BANNER ================= */}
         {reading?.level === 'HEAVY' && (
-          <Animated.View style={[styles.heavyAlertBanner, { opacity: sirenAnim }]}>
+          <Animated.View
+            style={[styles.heavyAlertBanner, { opacity: sirenAnim }]}
+          >
             <View style={styles.heavyAlertHeader}>
               <View style={styles.ringingIconCircle}>
                 <Feather name="bell" size={24} color="#FFFFFF" />
               </View>
               <View style={styles.alertContent}>
-                <Text style={styles.heavyAlertTitle}>🚨 EMERGENCY: HEAVY RAIN DETECTED!</Text>
+                <Text style={styles.heavyAlertTitle}>
+                  🚨 EMERGENCY: HEAVY RAIN DETECTED!
+                </Text>
                 <Text style={styles.heavyAlertSub}>
-                  {isMutedByUser ? 'Phone ring silenced' : '🔔 PHONE IS RINGING & VIBRATING NOW!'}
+                  {isMutedByUser
+                    ? 'Phone ring silenced'
+                    : '🔔 PHONE IS RINGING & VIBRATING NOW!'}
                 </Text>
               </View>
             </View>
@@ -372,7 +326,9 @@ export default function RainDetectorScreen() {
 
         {/* Hero Card: Current Weather Status */}
         <View style={styles.weatherStatusCard}>
-          <Text style={styles.weatherCardTitle}>Current Weather Status</Text>
+          <Text style={styles.weatherCardTitle}>
+            Current Weather Status
+          </Text>
           <Text style={[styles.weatherStatusValue, { color: levelInfo.color }]}>
             {levelInfo.title}
           </Text>
@@ -393,7 +349,9 @@ export default function RainDetectorScreen() {
               <Text style={styles.statValue}>
                 {reading ? `${intensityValue}%` : '--'}
               </Text>
-              <Text style={styles.statSubText}>{levelInfo.intensityText}</Text>
+              <Text style={styles.statSubText}>
+                {levelInfo.intensityText}
+              </Text>
             </View>
 
             {/* Card 2: Sensor Status */}
@@ -462,7 +420,9 @@ export default function RainDetectorScreen() {
           <View style={styles.gaugeHeaderRow}>
             <View>
               <Text style={styles.gaugeTitle}>Rain Detector Gauge</Text>
-              <Text style={styles.gaugeSubtitle}>Current intensity reading</Text>
+              <Text style={styles.gaugeSubtitle}>
+                Current intensity reading
+              </Text>
             </View>
             <Text style={styles.gaugePercentage}>{progressPercent}%</Text>
           </View>
@@ -495,7 +455,10 @@ export default function RainDetectorScreen() {
                 Delta: <Text style={styles.rawBold}>{reading.delta}</Text>
               </Text>
               <Text style={styles.rawText}>
-                Buzzer: <Text style={styles.rawBold}>{reading.muted ? 'Muted' : 'Sound ON'}</Text>
+                Buzzer:{' '}
+                <Text style={styles.rawBold}>
+                  {reading.muted ? 'Muted' : 'Sound ON'}
+                </Text>
               </Text>
             </View>
           )}
@@ -563,7 +526,9 @@ export default function RainDetectorScreen() {
                 style={styles.presetChip}
                 onPress={() => setInputUrl('http://192.168.0.101:8000')}
               >
-                <Text style={styles.presetChipText}>Wi-Fi (192.168.0.101)</Text>
+                <Text style={styles.presetChipText}>
+                  Wi-Fi (192.168.0.101)
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -625,30 +590,10 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     letterSpacing: 0.2,
   },
-  headerSubtitle: {
-    fontSize: 12,
-    color: '#8E8E93',
-    marginTop: 2,
-  },
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-  },
-  simulateButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 163, 255, 0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 163, 255, 0.35)',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  simulateText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#00A3FF',
   },
   iconButton: {
     padding: 8,
@@ -656,50 +601,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#1E1F24',
     borderWidth: 1,
     borderColor: '#26282E',
-  },
-
-  /* Connection banner */
-  connectionBanner: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginBottom: 14,
-    borderWidth: 1,
-  },
-  bannerOnline: {
-    backgroundColor: 'rgba(0, 230, 118, 0.08)',
-    borderColor: 'rgba(0, 230, 118, 0.25)',
-  },
-  bannerError: {
-    backgroundColor: 'rgba(239, 68, 68, 0.08)',
-    borderColor: 'rgba(239, 68, 68, 0.25)',
-  },
-  bannerConnecting: {
-    backgroundColor: 'rgba(251, 191, 36, 0.08)',
-    borderColor: 'rgba(251, 191, 36, 0.25)',
-  },
-  bannerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  bannerText: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#E5E7EB',
-  },
-  bannerHost: {
-    fontSize: 11,
-    color: '#9CA3AF',
-    maxWidth: 140,
   },
 
   /* LIGHT RAIN WARNING BANNER */

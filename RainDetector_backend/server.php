@@ -337,6 +337,27 @@ if ($uri === '/' || $uri === '/index.html' || $uri === '/dashboard') {
             <span class="banner-host" id="bannerHost">http://localhost:8000</span>
         </div>
 
+        <!-- LIGHT RAIN WARNING BANNER -->
+        <div class="light-alert" id="lightAlert">
+            <div class="light-alert-icon">⚠️</div>
+            <div>
+                <div class="light-alert-title">WARNING: LIGHT RAIN DETECTED!</div>
+                <div class="light-alert-sub">Precipitation has begun. Close windows and bring in hanging items.</div>
+            </div>
+        </div>
+
+        <!-- HEAVY RAIN EMERGENCY RINGING BANNER -->
+        <div class="heavy-alert" id="heavyAlert">
+            <div class="heavy-alert-top">
+                <div class="heavy-bell-circle">🔔</div>
+                <div>
+                    <div class="heavy-alert-title">🚨 EMERGENCY: HEAVY RAIN DETECTED!</div>
+                    <div class="heavy-alert-sub" id="heavyAlertSub">🔊 BROWSER ALARM RINGING NOW!</div>
+                </div>
+            </div>
+            <button class="silence-btn" id="silenceBtn" onclick="silenceAlarm()">🔇 Silence Alarm</button>
+        </div>
+
         <!-- Weather Status Hero Card -->
         <div class="weather-card">
             <div class="weather-card-title">Current Weather Status</div>
@@ -572,6 +593,73 @@ if ($uri === '/' || $uri === '/index.html' || $uri === '/dashboard') {
                 const d = new Date(data.updated);
                 updatedText.innerText = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
             }
+
+            showAlerts(data.level);
+        }
+
+        // ---- Alert Banners & Browser Alarm ----
+        let audioCtx = null;
+        let alarmInterval = null;
+        let alarmSilenced = false;
+
+        function showAlerts(level) {
+            const lightEl = document.getElementById('lightAlert');
+            const heavyEl = document.getElementById('heavyAlert');
+            if (lightEl) lightEl.className = level === 'LIGHT' ? 'light-alert active' : 'light-alert';
+            if (heavyEl) heavyEl.className = level === 'HEAVY' ? 'heavy-alert active' : 'heavy-alert';
+
+            if (level === 'HEAVY' && !alarmSilenced) {
+                startBrowserAlarm();
+            } else if (level !== 'HEAVY') {
+                stopBrowserAlarm();
+                alarmSilenced = false;
+                const sub = document.getElementById('heavyAlertSub');
+                const btn = document.getElementById('silenceBtn');
+                if (sub) sub.innerText = '🔊 BROWSER ALARM RINGING NOW!';
+                if (btn) btn.innerText = '🔇 Silence Alarm';
+            }
+        }
+
+        function startBrowserAlarm() {
+            if (alarmInterval) return;
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                playAlarmBurst();
+                alarmInterval = setInterval(playAlarmBurst, 3000);
+            } catch(e) {}
+        }
+
+        function playAlarmBurst() {
+            if (!audioCtx || alarmSilenced) return;
+            const now = audioCtx.currentTime;
+            [0, 1.2].forEach(function(offset) {
+                const o1 = audioCtx.createOscillator();
+                const o2 = audioCtx.createOscillator();
+                const g  = audioCtx.createGain();
+                o1.frequency.value = 440;
+                o2.frequency.value = 480;
+                g.gain.setValueAtTime(0, now + offset);
+                g.gain.linearRampToValueAtTime(0.4, now + offset + 0.05);
+                g.gain.setValueAtTime(0.4, now + offset + 0.75);
+                g.gain.linearRampToValueAtTime(0, now + offset + 0.8);
+                o1.connect(g); o2.connect(g); g.connect(audioCtx.destination);
+                o1.start(now + offset); o1.stop(now + offset + 0.8);
+                o2.start(now + offset); o2.stop(now + offset + 0.8);
+            });
+        }
+
+        function stopBrowserAlarm() {
+            if (alarmInterval) { clearInterval(alarmInterval); alarmInterval = null; }
+        }
+
+        function silenceAlarm() {
+            alarmSilenced = true;
+            stopBrowserAlarm();
+            const sub = document.getElementById('heavyAlertSub');
+            const btn = document.getElementById('silenceBtn');
+            if (sub) sub.innerText = '🔇 Alarm silenced';
+            if (btn) btn.innerText = '✓ Silenced';
         }
 
         async function triggerTest() {

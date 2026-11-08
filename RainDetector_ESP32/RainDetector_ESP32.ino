@@ -4,11 +4,18 @@
 #include <ESP32Servo.h>
 #include <WiFi.h>
 #include <HTTPClient.h>
+#include <WiFiClientSecure.h>
 
 // =================== Wi-Fi & Backend Settings ===================
 const char* WIFI_SSID     = "DITO";
 const char* WIFI_PASS     = "jhon12345";
-const char* SERVER_URL    = "http://192.168.0.101:8000/api/rain";   // your PC's IPv4 (ipconfig)
+
+// --- Switch between local (http) and cloud (https) ---
+// For LOCAL testing:   use http://192.168.0.101:8000/api/rain
+// For CLOUD (Railway/Render): use https://your-app.up.railway.app/api/rain
+const char* SERVER_URL    = "http://192.168.0.101:8000/api/rain";   // <-- change this to cloud URL when deployed
+const bool  USE_HTTPS     = false;   // set true when using https:// cloud URL
+
 const char* API_KEY       = "ce615aac2e6ea1876efa0c544cb5ed73";     // same as RAIN_API_KEY in .env
 
 const unsigned long HTTP_INTERVAL = 2500;          // send every 2.5 seconds
@@ -220,7 +227,18 @@ void sendToBackend(const char* levelStr, int value, int delta, int intensity, bo
   if (WiFi.status() != WL_CONNECTED) return;
 
   HTTPClient http;
-  http.begin(SERVER_URL);
+
+  if (USE_HTTPS) {
+    // Cloud HTTPS — skip cert verification for simplicity
+    static WiFiClientSecure secureClient;
+    secureClient.setInsecure();
+    http.begin(secureClient, SERVER_URL);
+  } else {
+    // Local HTTP
+    static WiFiClient plainClient;
+    http.begin(plainClient, SERVER_URL);
+  }
+
   http.setTimeout(1000);                       // keep the loop responsive
   http.addHeader("Content-Type", "application/json");
   http.addHeader("Accept", "application/json");
